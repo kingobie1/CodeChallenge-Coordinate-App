@@ -114,11 +114,13 @@ public class App {
     }
 
     private static void displayTilesEventWithDistanceToCoord(MapTile tile, Coordinate coord, Map map) {
-        System.out.println(
-                "Event " + tile.getEvent().getEventID() +
-                        " - $" + tile.getEvent().getCheapestTicketPrice() +
-                        ", Distance " + map.getManhattanDistance(coord, tile.getCoordinate())
-        );
+        if (tile != null) {
+            System.out.println(
+                    "Event " + tile.getEvent().getEventID() +
+                            " - $" + tile.getEvent().getCheapestTicketPrice() +
+                            ", Distance " + map.getManhattanDistance(coord, tile.getCoordinate())
+            );
+        }
     }
 
     private static void clearConsoleDisplay() {
@@ -222,9 +224,13 @@ class Map {
      */
 	private static void printCheapestEventAtMapTile(MapTile tile) {
         Event eventAtCoordinate = tile.getEvent();
-        if (eventAtCoordinate != null && eventAtCoordinate.hasTickets()) {
-            System.out.print("[$" + eventAtCoordinate.getCheapestTicketPrice() + "] ");
-        } else {
+        if (eventAtCoordinate != null) { // event exists at coordinate.
+            if (eventAtCoordinate.hasTickets()) {
+                System.out.print("[$" + eventAtCoordinate.getCheapestTicketPrice() + "] ");
+            } else {
+                System.out.print("[$0.00]"); // Assumption: An event with no ticket is free.
+            }
+        } else { // no event at coordinate.
             System.out.print("[----] ");
         }
     }
