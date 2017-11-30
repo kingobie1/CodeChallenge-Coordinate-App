@@ -47,7 +47,7 @@ public class App {
         String input = "";
 
         clearConsoleDisplay();
-        displayControls();
+        printControls();
 
         while (!input.equals("q")) {
             System.out.print("> ");
@@ -56,15 +56,15 @@ public class App {
             System.out.println();
 
             switch (input) {
-                case "m":
+                case "m": // see map with cheapest event at each tile.
                     map.printMap();
                     break;
 
-                case "cm":
+                case "cm": // see map with coordinates.
                     map.printCoordinateMap(bottomLeftCoordinateDisplayedToUser);
                     break;
 
-                case "q":
+                case "q": // quit.
                     clearConsoleDisplay();
                     return;
 
@@ -76,34 +76,34 @@ public class App {
                         String[] stringCoordinate = input.split(",[ ]*");
                         int x = Integer.parseInt(stringCoordinate[0]);
                         int y = Integer.parseInt(stringCoordinate[1]);
-
-                        // used when coordinates displayed to user are different than coordinates used by internal map (origin 0,0):
                         Coordinate origin = new Coordinate(x, y, bottomLeftCoordinateDisplayedToUser);
-
-                        // used when coordinates displayed to user are the same as coordinates used by internal map (origin 0,0):
-//                        Coordinate origin = new Coordinate(x, y);
-
-                        if (map.isCoordinateInMap(origin)) {
-                            MapTile[] closestEvents = map.getClosestNTilesWithEvents(origin, 5);
-
-                            System.out.println("Closest Events to (" + x + "," + y + "):");
-                            for (MapTile tile: closestEvents) {
-                                displayTilesEventWithDistanceToCoord(tile, origin, map);
-                            }
-                        } else {
-                            System.out.println("invalid coordinate.");
-                        }
-
+                        findClosestNTilesWithEvents(map, origin);
                     } else {
                         System.out.println("invalid input, type 'help' to see controls");
                     }
             }
 
-            displayControls();
+            printControls();
         }
     }
 
-    private static void displayControls() {
+    private static void findClosestNTilesWithEvents(Map map, Coordinate origin) {
+        Coordinate userDisplayedOrigin = origin.getCoordinateDisplayedToUser(bottomLeftCoordinateDisplayedToUser);
+
+        if (map.isCoordinateInMap(origin)) {
+            MapTile[] closestEvents = map.getClosestNTilesWithEvents(origin, 5);
+
+            System.out.println("Closest Events to (" + userDisplayedOrigin.getX() + "," + userDisplayedOrigin.getY() + "):");
+            for (MapTile tile: closestEvents) {
+                printTilesEventWithDistanceToCoord(tile, origin, map);
+            }
+        } else {
+            System.out.println("invalid coordinate.");
+        }
+    }
+
+    // helper for startApp:
+    private static void printControls() {
         System.out.println(
                 "\nControls\n" +
                         "   m: see map with cheapest event at each tile \n" +
@@ -113,7 +113,8 @@ public class App {
         );
     }
 
-    private static void displayTilesEventWithDistanceToCoord(MapTile tile, Coordinate coord, Map map) {
+    // helper for startApp:
+    private static void printTilesEventWithDistanceToCoord(MapTile tile, Coordinate coord, Map map) {
         if (tile != null) {
             System.out.println(
                     "Event " + tile.getEvent().getEventID() +
@@ -123,6 +124,7 @@ public class App {
         }
     }
 
+    // helper for startApp:
     private static void clearConsoleDisplay() {
         final String ANSI_CLS = "\u001b[2J";
         final String ANSI_HOME = "\u001b[H";
@@ -219,9 +221,7 @@ class Map {
 		}
 	}
 
-    /**
-     * helper for print map:
-     */
+    // helper for print map:
 	private static void printCheapestEventAtMapTile(MapTile tile) {
         Event eventAtCoordinate = tile.getEvent();
         if (eventAtCoordinate != null) { // event exists at coordinate.
@@ -341,9 +341,7 @@ class Map {
         }
     }
 
-    /**
-     * helper for print map:
-     */
+    // helper for print map:
     private static void printCoordinateForMap(Coordinate coordinate) {
         System.out.print("["+ coordinate.getX() +","+ coordinate.getY() +"] ");
     }
