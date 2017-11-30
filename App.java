@@ -1,19 +1,18 @@
 //package viagogoGame;
 
 /*
-    Assumptions:
-     1. Code was written assuming that coordinate 0,0 is the bottom left of the map.
-        Coordinate class was altered to represent the map where the bottom left of
-        the map is -10,-10. In order for the code to be reusable for a dynamic sized
-        map where the bottom left is 0,0, remove the coordinate conversion code in the
-        coordinate constructor.
+    By Obatola Seward-Evans
 
-        1.1
+    Assumptions:
+     1. The internal maps origin coordinate is (bottom left coordinate) 0,0
+        In order to represent an offset map where the origin is -10,-10 the
+        coordinate class translates each user displayed coordinate to the
+        internal map's coordinate.
 
      2. An event with no ticket is free.
 
      3. An event cannot have a ticket removed.
- */
+*/
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -21,42 +20,39 @@ import java.util.Scanner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-/** Singleton object, Game */
-public class Game {
-    private static Game game;
+/** Singleton object, App */
+public class App {
+    private static App app;
     private static ArrayList<Event> allEvents = new ArrayList<>();
 
-    // Game Rules
+    // App Rules:
     private static final int MAXNUMBEROFTICKETS = 10;
     private static final int MAXTICKETVALUE = 2000;
-    private static final Coordinate bottomLeftCoordinate = new Coordinate(-10, -10);
+    static final double PROBABILITY_EVENT_TILE = 0.4;
+    // determines the origin, bottom left coordinate, of the user displayed map:
+    private static final Coordinate bottomLeftCoordinateDisplayedToUser = new Coordinate(-10, -10);
 
 
     public static void main(String args[]) throws IOException {
         Map map = new Map(21,21);
-//		map.printMap();
-//        printAllEvents();
-        startGame(map);
+        startApp(map);
     }
 
-    private static void startGame(Map map) {
+    /**
+     * start the app displayed in the terminal
+     * @param map - the map used in the app
+     */
+    private static void startApp(Map map) {
         Scanner scanner = new Scanner(System.in);
         String input = "";
 
-        clearConsole();
-
-        System.out.println(
-                "Main Menu \n" +
-                "   m: see map with cheapest event at each tile \n" +
-                "   cm: see map with coordinates \n" +
-                "   x,y: input coordinate \n" +
-                "   q: quit game \n"
-        );
+        clearConsoleDisplay();
+        displayControls();
 
         while (!input.equals("q")) {
             System.out.print("> ");
             input = scanner.nextLine();
-            clearConsole();
+            clearConsoleDisplay();
             System.out.println();
 
             switch (input) {
@@ -65,36 +61,34 @@ public class Game {
                     break;
 
                 case "cm":
-                    map.printCoordinateMap(bottomLeftCoordinate);
+                    map.printCoordinateMap(bottomLeftCoordinateDisplayedToUser);
                     break;
 
                 case "q":
-                    clearConsole();
+                    clearConsoleDisplay();
                     return;
 
                 default:
                     Pattern p = Pattern.compile("[-]?[0-9]+,[ ]*[-]?[0-9]+");
                     Matcher m = p.matcher(input);
 
-                    if (m.find()) { // check if input is coordinates
+                    if (m.find()) { // check if input is coordinates.
                         String[] stringCoordinate = input.split(",[ ]*");
-                        Coordinate origin = new Coordinate(Integer.parseInt(stringCoordinate[0]), Integer.parseInt(stringCoordinate[1]));
+                        int x = Integer.parseInt(stringCoordinate[0]);
+                        int y = Integer.parseInt(stringCoordinate[1]);
 
-                        // Only used to convert user coordinate to standard coordinate system, where the top left tile is represented as 0,0
-                        origin.convertUserCoordinateToStandard(bottomLeftCoordinate);
+                        // used when coordinates displayed to user are different than coordinates used by internal map (origin 0,0):
+                        Coordinate origin = new Coordinate(x, y, bottomLeftCoordinateDisplayedToUser);
 
-                        if (map.isCoordInMap(origin)) {
-                            Tile[] closestEvents = map.getClosestNTilesWithEvents(
-                                    origin,
-                                    5
-                            );
+                        // used when coordinates displayed to user are the same as coordinates used by internal map (origin 0,0):
+//                        Coordinate origin = new Coordinate(x, y);
 
-                            for (Tile tile: closestEvents) {
-                                System.out.println(
-                                        "Event " + tile.getEvent().getEventID() +
-                                                " - $" + tile.getEvent().getCheapestTicketPrice() +
-                                                ", Distance " + map.getManhattanDistance(origin, tile.getCoordinate())
-                                );
+                        if (map.isCoordinateInMap(origin)) {
+                            MapTile[] closestEvents = map.getClosestNTilesWithEvents(origin, 5);
+
+                            System.out.println("Closest Events to (" + x + "," + y + "):");
+                            for (MapTile tile: closestEvents) {
+                                displayTilesEventWithDistanceToCoord(tile, origin, map);
                             }
                         } else {
                             System.out.println("invalid coordinate.");
@@ -105,29 +99,40 @@ public class Game {
                     }
             }
 
-            System.out.println(
-                "\nControls: \n" +
-                "   m: see map \n" +
-                "   x,y: input coordinate \n" +
-                "   q: quit game \n"
-            );
+            displayControls();
         }
     }
 
-    private static void clearConsole() {
+    private static void displayControls() {
+        System.out.println(
+                "\nControls\n" +
+                        "   m: see map with cheapest event at each tile \n" +
+                        "   cm: see map with coordinates \n" +
+                        "   x,y: input coordinate \n" +
+                        "   q: quit app \n"
+        );
+    }
+
+    private static void displayTilesEventWithDistanceToCoord(MapTile tile, Coordinate coord, Map map) {
+        System.out.println(
+                "Event " + tile.getEvent().getEventID() +
+                        " - $" + tile.getEvent().getCheapestTicketPrice() +
+                        ", Distance " + map.getManhattanDistance(coord, tile.getCoordinate())
+        );
+    }
+
+    private static void clearConsoleDisplay() {
         final String ANSI_CLS = "\u001b[2J";
         final String ANSI_HOME = "\u001b[H";
         System.out.print(ANSI_CLS + ANSI_HOME);
         System.out.flush();
     }
 
-    private Game() { }
-
-    static Game getInstance(){
-        if(game == null){
-            game = new Game();
+    static App getInstance() {
+        if(app == null){
+            app = new App();
         }
-        return game;
+        return app;
     }
 
     /**
@@ -139,7 +144,7 @@ public class Game {
 
         int numTickets = getRandomArbitrary(0, MAXNUMBEROFTICKETS);
 
-        // create tickets for event
+        // create tickets for event:
         for (int t = 0; t < numTickets; t++) {
             int ticketValue = getRandomArbitrary(0, MAXTICKETVALUE);
             e.addTicket(new Ticket(ticketValue));
@@ -171,10 +176,8 @@ class Map {
 	/** The height in grid cells of the map */
 	private static int HEIGHT = 20;
 
-	private static final double PROBABILITY_EVENT_TILE = 0.6;
-
 	/** The actual data for the map */
-	private Tile[] data;
+	private MapTile[] data;
 
 	/**
 	 * Generate WIDTH x HEIGHT size Map with evens and tickets
@@ -183,23 +186,24 @@ class Map {
         if (width > 1 && height > 1) {
             WIDTH = width;
             HEIGHT = height;
-            data = new Tile[WIDTH * HEIGHT];
+            data = new MapTile[WIDTH * HEIGHT];
         }
 
-        Game g = Game.getInstance();
+        App g = App.getInstance();
 
 		for (int r = 0; r < HEIGHT; r++) {
 			for (int c = 0; c < WIDTH; c++) {
-			    Coordinate coord = new Coordinate(c, (HEIGHT - 1) - r);
+			    Coordinate coordinate = new Coordinate(c, (HEIGHT - 1) - r);
 
-			    // create a new tile with a random event from all events
-			    Tile t = new Tile( coord );
+			    // create a new tile with a random event from all events:
+			    MapTile t = new MapTile( coordinate );
 
-			    if (Math.random() < PROBABILITY_EVENT_TILE) { // PROBABILITY_EVENT_TILE% chance there's an event at tile
+                // PROBABILITY_EVENT_TILE% chance there's an event at tile:
+			    if (Math.random() < g.PROBABILITY_EVENT_TILE) {
                     t.giveEvent(g.generateEvent());
                 }
 
-				data[ coordToIndex( coord ) ] = t;
+				data[ coordinateToIndex( coordinate ) ] = t;
 			}
 		}
 	}
@@ -207,33 +211,39 @@ class Map {
 	void printMap() {
 		for (int row = 0; row < HEIGHT; row++) {
 			for (int col = 0; col < WIDTH; col++) {
-			    Event eventAtCoordinate = this.getTileAtCoordinate(new Coordinate(col, (HEIGHT - 1) - row)).getEvent();
-			    if (eventAtCoordinate != null && eventAtCoordinate.hasTickets()) {
-                    System.out.print("[$" + eventAtCoordinate.getCheapestTicketPrice() + "] ");
-                } else {
-                    System.out.print("[----] ");
-                }
-
+                printCheapestEventAtMapTile(this.getTileAtCoordinate(new Coordinate(col, (HEIGHT - 1) - row)));
 			}
 			System.out.println("\n");
 		}
 	}
 
     /**
-     * Convert given coordinate to the corresponding index in Tile[] data
-     * @param coord given coordinate to convert
-     * @return int - representing the corresponding index in Tile[] data
+     * helper for print map:
      */
-	private static int coordToIndex(Coordinate coord) {
+	private static void printCheapestEventAtMapTile(MapTile tile) {
+        Event eventAtCoordinate = tile.getEvent();
+        if (eventAtCoordinate != null && eventAtCoordinate.hasTickets()) {
+            System.out.print("[$" + eventAtCoordinate.getCheapestTicketPrice() + "] ");
+        } else {
+            System.out.print("[----] ");
+        }
+    }
+
+    /**
+     * Convert given coordinate to the corresponding index in MapTile[] data
+     * @param coord given coordinate to convert
+     * @return int - representing the corresponding index in MapTile[] data
+     */
+	private static int coordinateToIndex(Coordinate coord) {
 	    int x = coord.getX();
 	    int y = (HEIGHT - 1) - coord.getY();
 
         return ((y * WIDTH) + x);
 	}
 
-    Tile getTileAtCoordinate(Coordinate coord) {
-        if (isCoordInMap(coord)) {
-            return data[coordToIndex(coord)];
+    MapTile getTileAtCoordinate(Coordinate coord) {
+        if (isCoordinateInMap(coord)) {
+            return data[coordinateToIndex(coord)];
         } else {
             return null;
         }
@@ -243,21 +253,21 @@ class Map {
         return Math.abs(coord1.getX()-coord2.getX()) + Math.abs(coord1.getY()-coord2.getY());
     }
 
-	boolean isCoordInMap(Coordinate coord) {
+	boolean isCoordinateInMap(Coordinate coord) {
 	    return 0 <= coord.getY() && coord.getY() < HEIGHT && 0 <= coord.getX() && coord.getX() < WIDTH;
     }
 
-    Tile[] getClosestNTilesWithEvents(Coordinate originCoordinate, int n) {
+    MapTile[] getClosestNTilesWithEvents(Coordinate originCoordinate, int n) {
         int xs = originCoordinate.getX();
         int ys = originCoordinate.getY();
 
         int maxDistance = 999;
         int numEventsFound = 0;
 
-        Tile[] closestEvents = new Tile[n];
+        MapTile[] closestEvents = new MapTile[n];
 
-        // check origin coordinate
-        if (isCoordInMap(originCoordinate)) {
+        // check origin coordinate:
+        if (isCoordinateInMap(originCoordinate)) {
             if (this.getTileAtCoordinate(originCoordinate).hasEvent()) {
                 closestEvents[numEventsFound] = this.getTileAtCoordinate(originCoordinate);
                 numEventsFound += 1;
@@ -267,10 +277,9 @@ class Map {
 
         for (int d = 1; d < maxDistance; d++) {
             for (int i = 0; i < d + 1; i++) {
+                // check coordinate (x1, y1):
                 Coordinate coord1 = new Coordinate(xs - d + i, ys - i);
-
-                // check coordinate (x1, y1)
-                if (isCoordInMap(coord1)) {
+                if (isCoordinateInMap(coord1)) {
                     if (this.getTileAtCoordinate(coord1).hasEvent()) {
                         closestEvents[numEventsFound] = this.getTileAtCoordinate(coord1);
                         numEventsFound += 1;
@@ -278,10 +287,9 @@ class Map {
                     }
                 }
 
+                // check coordinate (x2, y2):
                 Coordinate coord2 = new Coordinate(xs + d - i, ys + i);
-
-                // check coordinate (x2, y2)
-                if (isCoordInMap(coord2)) {
+                if (isCoordinateInMap(coord2)) {
                     if (this.getTileAtCoordinate(coord2).hasEvent()) {
                         closestEvents[numEventsFound] = this.getTileAtCoordinate(coord2);
                         numEventsFound += 1;
@@ -291,10 +299,9 @@ class Map {
             }
 
             for (int i = 1; i < d; i++) {
+                // Check coordinate (x1, y1):
                 Coordinate coord1 = new Coordinate(xs - i, ys + d - i);
-
-                // Check coordinate (x1, y1)
-                if (isCoordInMap(coord1)) {
+                if (isCoordinateInMap(coord1)) {
                     if (this.getTileAtCoordinate(coord1).hasEvent()) {
                         closestEvents[numEventsFound] = this.getTileAtCoordinate(coord1);
                         numEventsFound += 1;
@@ -302,10 +309,9 @@ class Map {
                     }
                 }
 
+                // Check coordinate (x2, y2):
                 Coordinate coord2 = new Coordinate(xs + d - i, ys - i);
-
-                // Check coordinate (x2, y2)
-                if (isCoordInMap(coord2)) {
+                if (isCoordinateInMap(coord2)) {
                     if (this.getTileAtCoordinate(coord2).hasEvent()) {
                         closestEvents[numEventsFound] = this.getTileAtCoordinate(coord2);
                         numEventsFound += 1;
@@ -319,22 +325,29 @@ class Map {
     }
 
     void printCoordinateMap(Coordinate bottomLeftCoordinate) {
-//        for (int row = 0; row < HEIGHT; row++) {
-//            for (int col = 0; col < WIDTH; col++) {
-//                    Coordinate c = new Coordinate(col, (HEIGHT - 1) - row);
-////                    c.convertUserCoordinateToStandard(bottomLeftCoordinate);
-//                    System.out.print("[" + c.getX() + ", " + c.getY() + " ]");
-//            }
-//            System.out.println("\n");
-//        }
+        for (int row = 0; row < HEIGHT; row++) {
+            for (int col = 0; col < WIDTH; col++) {
+                Coordinate c = new Coordinate(col, (HEIGHT - 1) - row);
+                Coordinate userDisplayedCoordinate = c.getCoordinateDisplayedToUser(bottomLeftCoordinate);
+                printCoordinateForMap(userDisplayedCoordinate);
+            }
+            System.out.println("\n");
+        }
+    }
+
+    /**
+     * helper for print map:
+     */
+    private static void printCoordinateForMap(Coordinate coordinate) {
+        System.out.print("["+ coordinate.getX() +","+ coordinate.getY() +"] ");
     }
 }
 
-class Tile {
+class MapTile {
 	private Event event;
 	private Coordinate coordinate;
 
-    Tile(Coordinate coordinate) { this.coordinate = coordinate; }
+    MapTile(Coordinate coordinate) { this.coordinate = coordinate; }
 
 	void giveEvent(Event event) {
         this.event = event;
@@ -379,7 +392,7 @@ class Event {
     }
 
     double getCheapestTicketPrice() {
-	    if (cheapestTicket == null) { // an event with no ticket is free
+	    if (cheapestTicket == null) { // an event with no ticket is free.
 	        return 0;
         } else {
             return cheapestTicket.getPrice();
@@ -431,22 +444,6 @@ class Coordinate {
     }
 
     /**
-     * Creates a standard coordinate used by the internal map based off of the given x,y coordinate displayed to the
-     * user.
-     *
-     * Translates the x,y coordinate displayed to the user to the corresponding coordinate used by the internal map, with
-     * an origin (bottom left coordinate) of 0,0. This is used when the map presented to the user is offset from the
-     * internal map.
-     *
-     * Function should only be used when the coordinate system displayed to the user is offset from the internal map
-     * coordinate system.
-     */
-    void convertUserCoordinateToStandard(Coordinate bottomLeftCoordinate) {
-        this.x = x - bottomLeftCoordinate.getX();
-        this.y = y - bottomLeftCoordinate.getY();
-    }
-
-     /**
      * Returns the user displayed coordinate of this coordinate.
      *
      * The internal map uses a coordinate system where the origin is 0,0. The coordinate system displayed to the user
@@ -458,7 +455,9 @@ class Coordinate {
      * @param bottomLeftCoordinate - the bottom left coordinate, origin, that is displayed to the user.
      */
     Coordinate getCoordinateDisplayedToUser(Coordinate bottomLeftCoordinate) {
-        return null;
+        int x =  this.x + bottomLeftCoordinate.getX();
+        int y =  this.y + bottomLeftCoordinate.getY();
+        return new Coordinate(x, y);
     }
 
     int getX() { return x; }
