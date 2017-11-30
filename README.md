@@ -2,8 +2,8 @@
 
 ## Getting Started
 in order to run the app, go into terminal and type the following in the same folder where App.java is stored. 
-`> javac App.java`  to compile
-`> java App` to run the application
+- `javac App.java`  to compile
+- `java App` to run the application
 You’ll then be met with simple instructions on how to use the application in your terminal:
 
 ```
