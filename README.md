@@ -41,7 +41,7 @@ How would you change your program if you were working with a much larger world s
 ### Example Program Run
 ```
 Please Input Coordinates:
-\> 4,2
+> 4,2
 Closest Events to (-10,-10):
 Event 155 - $100.0, Distance 0
 Event 148 - $123.0, Distance 1
